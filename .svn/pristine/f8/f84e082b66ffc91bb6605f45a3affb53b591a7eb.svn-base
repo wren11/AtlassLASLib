@@ -1,0 +1,19 @@
+﻿using System;
+
+namespace Atlass.LAS.Lib.Types.Class
+{
+    public class TcLasPointBase
+    {
+        public Int64 Index { get; set; }
+        
+        public Double X { get; set; }
+        public Double Y { get; set; }
+        public Double Z { get; set; }
+        
+        public Byte ReturnNumber { get; set; }
+        public Byte NumberOfReturns { get; set; }
+        public Byte EdgeOfFlightLine { get; set; }
+
+        public TcLasPointBase() { }
+    }
+}

@@ -1,0 +1,643 @@
+﻿using System;
+using System.IO;
+using System.Runtime.InteropServices;
+using Atlass.LAS.Lib.Types.Interface;
+using Atlass.LAS.Lib.Types.Struct;
+using Atlass.LAS.Lib.Global;
+
+namespace Atlass.LAS.Lib.Operations.IO
+{
+    public class TcLasWriter : IDisposable
+    {
+        // Number of points to read at once.
+        protected String m_Output;
+        protected BinaryWriter m_Writer;
+
+        // Flags to be set from outside.
+        public Double XAdjustment { private get; set; }
+        public Double YAdjustment { private get; set; }
+        public Double ZAdjustment { private get; set; }
+        public Boolean FirstEchoOnly { private get; set; }
+        public Boolean LastEchoOnly { private get; set; }
+        public Int32 Decimation { private get; set; }
+        public Double MinClampZ { private get; set; }
+        public Double MaxClampZ { private get; set; }
+
+        // Optimization flags.
+        private Boolean AdjustmentRequired { get { return XAdjustment != 0.0 || YAdjustment != 0 || ZAdjustment != 0; } }
+        private Boolean EchoRequired { get { return FirstEchoOnly || LastEchoOnly; } }
+        private Boolean ClampRequired { get { return MinClampZ != Double.MinValue || MaxClampZ != Double.MaxValue; } }
+        private Boolean DecimationRequired { get { return Decimation != 1; } }
+        
+        // General parameter to specify whether there is a custom parameter.
+        private Boolean HasCustomParameter { get { return AdjustmentRequired || EchoRequired || ClampRequired || DecimationRequired; } }
+
+        public TcLasWriter(String prmOutput)
+        {
+            if (!prmOutput.EndsWith(".las", StringComparison.CurrentCultureIgnoreCase))
+            {
+                throw new InvalidDataException(String.Format("Invalid output parameter : {0}", prmOutput));
+            }
+
+            m_Output = prmOutput;
+            m_Writer = new BinaryWriter(new FileStream(m_Output, FileMode.Create));
+
+            XAdjustment = 0.0;
+            YAdjustment = 0.0;
+            ZAdjustment = 0.0;
+            FirstEchoOnly = false;
+            LastEchoOnly = false;
+            Decimation = 1;
+            MinClampZ = Double.MinValue;
+            MaxClampZ = Double.MaxValue;
+        }
+        //-----------------------------------------------------------------------------
+
+        protected TiLasHeader GetDuplicateEmptyHeader(TiLasHeader prmHeader)
+        {
+            prmHeader.MinX = Double.MaxValue;
+            prmHeader.MaxX = Double.MinValue;
+            prmHeader.MinY = Double.MaxValue;
+            prmHeader.MaxY = Double.MinValue;
+            prmHeader.MinZ = Double.MaxValue;
+            prmHeader.MaxZ = Double.MinValue;
+
+            if (prmHeader.HeaderSize == Marshal.SizeOf(typeof(TsLasHeader12)))
+            {
+                TsLasHeader12 header = (TsLasHeader12)(((TsLasHeader12)prmHeader).Clone());
+                header.NumberOfPointRecords = 0;
+                header.NumberofPointsByReturn1 = 0;
+                header.NumberofPointsByReturn2 = 0;
+                header.NumberofPointsByReturn3 = 0;
+                header.NumberofPointsByReturn4 = 0;
+                header.NumberofPointsByReturn5 = 0;
+                return header;
+            }
+            else if (prmHeader.HeaderSize == Marshal.SizeOf(typeof(TsLasHeader13)))
+            {
+                TsLasHeader13 header = (TsLasHeader13)(((TsLasHeader13)prmHeader).Clone());
+                header.NumberOfPointRecords = 0;
+                header.NumberofPointsByReturn1 = 0;
+                header.NumberofPointsByReturn2 = 0;
+                header.NumberofPointsByReturn3 = 0;
+                header.NumberofPointsByReturn4 = 0;
+                header.NumberofPointsByReturn5 = 0;
+                return header;
+            }
+            else if (prmHeader.HeaderSize == Marshal.SizeOf(typeof(TsLasHeader14)))
+            {
+                TsLasHeader14 header = (TsLasHeader14)(((TsLasHeader14)prmHeader).Clone());
+                header.LegNumberOfPointRecords = 0;
+                header.LegNumberofPointsByReturn1 = 0;
+                header.LegNumberofPointsByReturn2 = 0;
+                header.LegNumberofPointsByReturn3 = 0;
+                header.LegNumberofPointsByReturn4 = 0;
+                header.LegNumberofPointsByReturn5 = 0;
+
+                header.NumberOfPointRecords = 0;
+                header.NumberofPointsByReturn1 = 0;
+                header.NumberofPointsByReturn2 = 0;
+                header.NumberofPointsByReturn3 = 0;
+                header.NumberofPointsByReturn4 = 0;
+                header.NumberofPointsByReturn5 = 0;
+                header.NumberofPointsByReturn6 = 0;
+                header.NumberofPointsByReturn7 = 0;
+                header.NumberofPointsByReturn8 = 0;
+                header.NumberofPointsByReturn9 = 0;
+                header.NumberofPointsByReturn10 = 0;
+                header.NumberofPointsByReturn11 = 0;
+                header.NumberofPointsByReturn12 = 0;
+                header.NumberofPointsByReturn13 = 0;
+                header.NumberofPointsByReturn14 = 0;
+                header.NumberofPointsByReturn15 = 0;
+                return header;
+            }
+
+            throw new InvalidDataException("Header size is wrong");
+        }
+        //-----------------------------------------------------------------------------
+
+        /// <summary>
+        /// Adjusts the LAS points for the tile and update the tile header. It takes the las file header for the block
+        /// of points and the modified header for this specific tile. It then update the points by taking the common LAS
+        /// header for the full area as reference. It also updates the tile header from the computed values of the points.
+        /// </summary>
+        /// <typeparam name="T">Type of the las point</typeparam>
+        /// <param name="prmHeader">LAS header to update</param>
+        /// <param name="X">X coordinate</param>
+        /// <param name="Y">Y coordinate</param>
+        /// <param name="Z">Z coordinate</param>
+        /// <param name="prmReturnNo">The return number from the laser shot</param>
+        /// <returns>The header as an interface to converted to the specific header structure.</returns>
+        protected TiLasHeader UpdateHeader<T>(TiLasHeader prmTileHeader, Double X, Double Y, Double Z, Byte prmReturnNo) where T : TiLasPoint
+        {
+            if (prmTileHeader is TsLasHeader12)
+            {
+                TsLasHeader12 tileHeader = (TsLasHeader12)prmTileHeader;
+                tileHeader.MinX = Math.Min(tileHeader.MinX, X);
+                tileHeader.MinY = Math.Min(tileHeader.MinY, Y);
+                tileHeader.MinZ = Math.Min(tileHeader.MinZ, Z);
+                tileHeader.MaxX = Math.Max(tileHeader.MaxX, X);
+                tileHeader.MaxY = Math.Max(tileHeader.MaxY, Y);
+                tileHeader.MaxZ = Math.Max(tileHeader.MaxZ, Z);
+                tileHeader.NumberOfPointRecords++;
+
+                switch (prmReturnNo)
+                {
+                    case 1:
+                        tileHeader.NumberofPointsByReturn1++;
+                        break;
+                    case 2:
+                        tileHeader.NumberofPointsByReturn2++;
+                        break;
+                    case 3:
+                        tileHeader.NumberofPointsByReturn3++;
+                        break;
+                    case 4:
+                        tileHeader.NumberofPointsByReturn4++;
+                        break;
+                    case 5:
+                        tileHeader.NumberofPointsByReturn5++;
+                        break;
+                }
+                return tileHeader;
+            }
+            else if (prmTileHeader is TsLasHeader13)
+            {
+                TsLasHeader13 tileHeader = (TsLasHeader13)prmTileHeader;
+                tileHeader.MinX = Math.Min(tileHeader.MinX, X);
+                tileHeader.MinY = Math.Min(tileHeader.MinY, Y);
+                tileHeader.MinZ = Math.Min(tileHeader.MinZ, Z);
+                tileHeader.MaxX = Math.Max(tileHeader.MaxX, X);
+                tileHeader.MaxY = Math.Max(tileHeader.MaxY, Y);
+                tileHeader.MaxZ = Math.Max(tileHeader.MaxZ, Z);
+                tileHeader.NumberOfPointRecords++;
+
+                switch (prmReturnNo)
+                {
+                    case 1:
+                        tileHeader.NumberofPointsByReturn1++;
+                        break;
+                    case 2:
+                        tileHeader.NumberofPointsByReturn2++;
+                        break;
+                    case 3:
+                        tileHeader.NumberofPointsByReturn3++;
+                        break;
+                    case 4:
+                        tileHeader.NumberofPointsByReturn4++;
+                        break;
+                    case 5:
+                        tileHeader.NumberofPointsByReturn5++;
+                        break;
+                }
+
+                return tileHeader;
+            }
+            else if (prmTileHeader is TsLasHeader14)
+            {
+                TsLasHeader14 tileHeader = (TsLasHeader14)prmTileHeader;
+                tileHeader.MinX = Math.Min(tileHeader.MinX, X);
+                tileHeader.MinY = Math.Min(tileHeader.MinY, Y);
+                tileHeader.MinZ = Math.Min(tileHeader.MinZ, Z);
+                tileHeader.MaxX = Math.Max(tileHeader.MaxX, X);
+                tileHeader.MaxY = Math.Max(tileHeader.MaxY, Y);
+                tileHeader.MaxZ = Math.Max(tileHeader.MaxZ, Z);
+                tileHeader.NumberOfPointRecords++;
+                tileHeader.LegNumberOfPointRecords++;
+
+                switch (prmReturnNo)
+                {
+                    case 1:
+                        tileHeader.NumberofPointsByReturn1++;
+                        tileHeader.LegNumberofPointsByReturn1++;
+                        break;
+                    case 2:
+                        tileHeader.NumberofPointsByReturn2++;
+                        tileHeader.LegNumberofPointsByReturn2++;
+                        break;
+                    case 3:
+                        tileHeader.NumberofPointsByReturn3++;
+                        tileHeader.LegNumberofPointsByReturn3++;
+                        break;
+                    case 4:
+                        tileHeader.NumberofPointsByReturn4++;
+                        tileHeader.LegNumberofPointsByReturn4++;
+                        break;
+                    case 5:
+                        tileHeader.NumberofPointsByReturn5++;
+                        tileHeader.LegNumberofPointsByReturn5++;
+                        break;
+                    case 6:
+                        tileHeader.NumberofPointsByReturn6++;
+                        break;
+                    case 7:
+                        tileHeader.NumberofPointsByReturn7++;
+                        break;
+                    case 8:
+                        tileHeader.NumberofPointsByReturn8++;
+                        break;
+                    case 9:
+                        tileHeader.NumberofPointsByReturn9++;
+                        break;
+                    case 10:
+                        tileHeader.NumberofPointsByReturn10++;
+                        break;
+                    case 11:
+                        tileHeader.NumberofPointsByReturn11++;
+                        break;
+                    case 12:
+                        tileHeader.NumberofPointsByReturn12++;
+                        break;
+                    case 13:
+                        tileHeader.NumberofPointsByReturn13++;
+                        break;
+                    case 14:
+                        tileHeader.NumberofPointsByReturn14++;
+                        break;
+                    case 15:
+                        tileHeader.NumberofPointsByReturn15++;
+                        break;
+                }
+
+                return tileHeader;
+            }
+
+            throw new InvalidDataException("Couldn't update the header. Invalid data format.");
+        }
+        //-----------------------------------------------------------------------------
+
+        /// <summary>
+        /// Adjusts the LAS points for the tile and update the tile header. It takes the las file header for the block
+        /// of points and the modified header for this specific tile. It then update the points by taking the common LAS
+        /// header for the full area as reference. It also updates the tile header from the computed values of the points.
+        /// </summary>
+        /// <typeparam name="T">Type of the las point</typeparam>
+        /// <param name="prmHeader">LAS header to update</param>
+        /// <param name="prmPoints">Array of LAS points</param>
+        /// <param name="prmCount">Number of points to be considered</param>
+        /// <returns>The header as an interface to converted to the specific header structure.</returns>
+        protected TiLasHeader UpdateHeader<T>(TiLasHeader prmTileHeader, T[] prmPoints, Int32 prmCount) where T : TiLasPoint
+        {
+            Double X, Y, Z;
+            if (prmTileHeader is TsLasHeader12)
+            {
+                TsLasHeader12 tileHeader = (TsLasHeader12)prmTileHeader;
+                for (int i = 0; i < prmCount; i++)
+                {
+                    X = tileHeader.XOffset + tileHeader.XScaleFactor * prmPoints[i].X;
+                    Y = tileHeader.YOffset + tileHeader.YScaleFactor * prmPoints[i].Y;
+                    Z = tileHeader.ZOffset + tileHeader.ZScaleFactor * prmPoints[i].Z;
+
+                    tileHeader.MinX = Math.Min(tileHeader.MinX, X);
+                    tileHeader.MinY = Math.Min(tileHeader.MinY, Y);
+                    tileHeader.MinZ = Math.Min(tileHeader.MinZ, Z);
+                    tileHeader.MaxX = Math.Max(tileHeader.MaxX, X);
+                    tileHeader.MaxY = Math.Max(tileHeader.MaxY, Y);
+                    tileHeader.MaxZ = Math.Max(tileHeader.MaxZ, Z);
+                    tileHeader.NumberOfPointRecords++;
+
+                    switch (prmPoints[i].ReturnNumber())
+                    {
+                        case 1:
+                            tileHeader.NumberofPointsByReturn1++;
+                            break;
+                        case 2:
+                            tileHeader.NumberofPointsByReturn2++;
+                            break;
+                        case 3:
+                            tileHeader.NumberofPointsByReturn3++;
+                            break;
+                        case 4:
+                            tileHeader.NumberofPointsByReturn4++;
+                            break;
+                        case 5:
+                            tileHeader.NumberofPointsByReturn5++;
+                            break;
+                    }
+                }
+                return tileHeader;
+            }
+            else if (prmTileHeader is TsLasHeader13)
+            {
+                TsLasHeader13 tileHeader = (TsLasHeader13)prmTileHeader;
+                for (int i = 0; i < prmCount; i++)
+                {
+                    X = tileHeader.XOffset + tileHeader.XScaleFactor * prmPoints[i].X;
+                    Y = tileHeader.YOffset + tileHeader.YScaleFactor * prmPoints[i].Y;
+                    Z = tileHeader.ZOffset + tileHeader.ZScaleFactor * prmPoints[i].Z;
+
+                    tileHeader.MinX = Math.Min(tileHeader.MinX, X);
+                    tileHeader.MinY = Math.Min(tileHeader.MinY, Y);
+                    tileHeader.MinZ = Math.Min(tileHeader.MinZ, Z);
+                    tileHeader.MaxX = Math.Max(tileHeader.MaxX, X);
+                    tileHeader.MaxY = Math.Max(tileHeader.MaxY, Y);
+                    tileHeader.MaxZ = Math.Max(tileHeader.MaxZ, Z);
+                    tileHeader.NumberOfPointRecords++;
+
+                    switch (prmPoints[i].ReturnNumber())
+                    {
+                        case 1:
+                            tileHeader.NumberofPointsByReturn1++;
+                            break;
+                        case 2:
+                            tileHeader.NumberofPointsByReturn2++;
+                            break;
+                        case 3:
+                            tileHeader.NumberofPointsByReturn3++;
+                            break;
+                        case 4:
+                            tileHeader.NumberofPointsByReturn4++;
+                            break;
+                        case 5:
+                            tileHeader.NumberofPointsByReturn5++;
+                            break;
+                    }
+                }
+                return tileHeader;
+            }
+            else if (prmTileHeader is TsLasHeader14)
+            {
+                TsLasHeader14 tileHeader = (TsLasHeader14)prmTileHeader;
+                for (int i = 0; i < prmCount; i++)
+                {
+                    X = tileHeader.XOffset + tileHeader.XScaleFactor * prmPoints[i].X;
+                    Y = tileHeader.YOffset + tileHeader.YScaleFactor * prmPoints[i].Y;
+                    Z = tileHeader.ZOffset + tileHeader.ZScaleFactor * prmPoints[i].Z;
+
+                    tileHeader.MinX = Math.Min(tileHeader.MinX, X);
+                    tileHeader.MinY = Math.Min(tileHeader.MinY, Y);
+                    tileHeader.MinZ = Math.Min(tileHeader.MinZ, Z);
+                    tileHeader.MaxX = Math.Max(tileHeader.MaxX, X);
+                    tileHeader.MaxY = Math.Max(tileHeader.MaxY, Y);
+                    tileHeader.MaxZ = Math.Max(tileHeader.MaxZ, Z);
+                    tileHeader.NumberOfPointRecords++;
+                    tileHeader.LegNumberOfPointRecords++;
+
+                    switch (prmPoints[i].ReturnNumber())
+                    {
+                        case 1:
+                            tileHeader.NumberofPointsByReturn1++;
+                            tileHeader.LegNumberofPointsByReturn1++;
+                            break;
+                        case 2:
+                            tileHeader.NumberofPointsByReturn2++;
+                            tileHeader.LegNumberofPointsByReturn2++;
+                            break;
+                        case 3:
+                            tileHeader.NumberofPointsByReturn3++;
+                            tileHeader.LegNumberofPointsByReturn3++;
+                            break;
+                        case 4:
+                            tileHeader.NumberofPointsByReturn4++;
+                            tileHeader.LegNumberofPointsByReturn4++;
+                            break;
+                        case 5:
+                            tileHeader.NumberofPointsByReturn5++;
+                            tileHeader.LegNumberofPointsByReturn5++;
+                            break;
+                        case 6:
+                            tileHeader.NumberofPointsByReturn6++;
+                            break;
+                        case 7:
+                            tileHeader.NumberofPointsByReturn7++;
+                            break;
+                        case 8:
+                            tileHeader.NumberofPointsByReturn8++;
+                            break;
+                        case 9:
+                            tileHeader.NumberofPointsByReturn9++;
+                            break;
+                        case 10:
+                            tileHeader.NumberofPointsByReturn10++;
+                            break;
+                        case 11:
+                            tileHeader.NumberofPointsByReturn11++;
+                            break;
+                        case 12:
+                            tileHeader.NumberofPointsByReturn12++;
+                            break;
+                        case 13:
+                            tileHeader.NumberofPointsByReturn13++;
+                            break;
+                        case 14:
+                            tileHeader.NumberofPointsByReturn14++;
+                            break;
+                        case 15:
+                            tileHeader.NumberofPointsByReturn15++;
+                            break;
+                    }
+                }
+                return tileHeader;
+            }
+
+            throw new InvalidDataException("Couldn't update the header. Invalid data format.");
+        }
+        //-----------------------------------------------------------------------------
+
+        protected void WriteHeaderToFile(TiLasHeader prmHeader)
+        {
+            if (!m_Writer.BaseStream.CanWrite)
+            {
+                throw new IOException("Cannot write the header into the LAS file");
+            }
+
+            // Allocate global memory of a size of header + extra = offset.
+            IntPtr ptr = Marshal.AllocHGlobal((Int32)prmHeader.HeaderSize);
+
+            try
+            {
+                m_Writer.BaseStream.Position = 0;
+
+                Byte[] arr = new Byte[prmHeader.HeaderSize];
+
+                // Convert the header to the pointer.
+                Marshal.StructureToPtr(prmHeader, ptr, true);
+
+                // Copy the data.
+                Marshal.Copy(ptr, arr, 0, (Int32)prmHeader.HeaderSize);
+
+                m_Writer.Write(arr);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(ptr);
+            }
+        }
+        //----------------------------------------------------------------------------- 
+
+        public void WriteHeader(TiLasHeader prmHeader, Byte[] prmOffsetBytes)
+        {
+            // Write the actual header.
+            WriteHeaderToFile(prmHeader);
+
+            // Write the offset bits.
+            Int64 offsetBytesLength = (Int64)Math.Min(prmHeader.PointOffset - prmHeader.HeaderSize, prmOffsetBytes.Length);
+
+            if (offsetBytesLength > 0)
+            {
+                m_Writer.BaseStream.Seek(prmHeader.HeaderSize, SeekOrigin.Begin);
+                m_Writer.Write(prmOffsetBytes);
+            }
+        }
+        //-----------------------------------------------------------------------------
+
+        public void WriteHeader(TiLasHeader prmHeader)
+        {
+            WriteHeader(prmHeader, new Byte[0]);
+        }
+        //-----------------------------------------------------------------------------
+
+        /// <summary>
+        /// Function to write LAS points into file without considering custom options.
+        /// N.B. Use 'WritePointsWithOptions' if you have set some custom parameter.
+        /// </summary>
+        /// <typeparam name="T">Point type</typeparam>
+        /// <param name="prmPoints">Array of points</param>
+        /// <param name="prmNoOfPoints">Number of points to be considered</param>
+        public void WritePoints<T>(T[] prmPoints, Int64 prmNoOfPoints = -1) where T : TiLasPoint
+        {
+            Int32 count = prmNoOfPoints < 0 ? prmPoints.Length : (Int32)prmNoOfPoints;
+            if (count > 0)
+            {
+                Int32 pointSize = Marshal.SizeOf(prmPoints[0]);
+                Int32 totalSize = pointSize * count;
+
+                // Allocates memory and totalPtr points to the 1st location.
+                IntPtr totalPtr = Marshal.AllocHGlobal(totalSize);
+                IntPtr structPtr;
+
+                // This is used to increment the location of the pointer later. It cant be done with IntPtr.
+                // ptrLoc points to the 1st location of totalPtr.
+                Int64 ptrLoc = totalPtr.ToInt64();
+
+                for (int i = 0; i < count; i++)
+                {
+                    // structPtr points to ptrLoc.
+                    structPtr = new IntPtr(ptrLoc);
+
+                    // Converts the structure into memory pointed by structPtr
+                    Marshal.StructureToPtr(prmPoints[i], structPtr, false);
+
+                    // Move the pointer.
+                    ptrLoc += pointSize;
+                }
+
+                byte[] buffer = new byte[totalSize];
+
+                // Copies the data from totalPtr memory to arr array.
+                Marshal.Copy(totalPtr, buffer, 0, totalSize);
+
+                // Free the memory from the heap.
+                Marshal.FreeHGlobal(totalPtr);
+
+                // Write the array.
+                m_Writer.Write(buffer);
+            }
+        }
+        //------------------------------------------------------------------
+
+        protected void WritePointsWithOptions<T>(T[] prmPoints, ref TiLasHeader prmHeader, Int64 prmNoOfPoints = -1) where T : TiLasPoint
+        {
+            Double Z;
+            Byte returnNo, noOfReturns;
+            Int32 count = prmNoOfPoints < 0 ? prmPoints.Length : (Int32)prmNoOfPoints;
+            T[] writablePoints = new T[count];
+            Int32 writableCount = 0;
+            
+            for (int i = 0; i < count; i++)
+            {
+                if (i % Decimation != 0)
+                {
+                    continue;
+                }
+
+                if (ClampRequired)
+                {
+                    Z = prmPoints[i].Z * prmHeader.ZScaleFactor + prmHeader.ZOffset;
+                    if (Z < MinClampZ && Z > MaxClampZ)
+                    {
+                        continue;
+                    }
+                }
+
+                if (EchoRequired)
+                {
+                    returnNo = prmPoints[i].ReturnNumber();
+                    if (FirstEchoOnly && returnNo != 1)
+                    {
+                        continue;
+                    }
+
+                    noOfReturns = prmPoints[i].NumberOfReturns();
+                    if (LastEchoOnly && returnNo != noOfReturns)
+                    {
+                        continue;
+                    }
+                }
+
+                if (AdjustmentRequired)
+                {
+                    prmPoints[i].X += (Int32)(XAdjustment / prmHeader.XScaleFactor);
+                    prmPoints[i].Y += (Int32)(YAdjustment / prmHeader.YScaleFactor);
+                    prmPoints[i].Z += (Int32)(ZAdjustment / prmHeader.ZScaleFactor);
+                }
+
+                writablePoints[writableCount++] = prmPoints[i];
+            }
+
+            WritePoints<T>(writablePoints, writableCount);
+            prmHeader = UpdateHeader<T>(prmHeader, writablePoints, writableCount);
+        }
+        //------------------------------------------------------------------
+
+        /// <summary>
+        /// Function to write LAS points into file with considering custom options.
+        /// N.B. Use 'WritePoints' if you don't care about customization for faster processing.
+        /// </summary>
+        /// <typeparam name="T">Point type</typeparam>
+        /// <param name="prmInputLas">The input LAS file</param>
+        public void WriteLasWithOptions<T>(String prmInputLas) where T : TiLasPoint
+        {
+            using (TcLasReader reader = new TcLasReader(prmInputLas))
+            {
+                T[] points;
+                Int64 pointsToProcess;
+                Int64 pointsProcessed = 0;
+                Int64 noOfPoints = reader.Header.GetNumberOfPoints();
+
+                TiLasHeader header = GetDuplicateEmptyHeader(reader.Header);
+
+                // Write header and the offset bytes.
+                WriteHeader(header, reader.OffsetBytes);
+
+                while (pointsProcessed < noOfPoints)
+                {
+                    pointsToProcess = Math.Min(TcConstants.MaxLasPointsToProcessAtOnce, noOfPoints - pointsProcessed);
+
+                    points = reader.ReadPoints<T>(pointsToProcess);
+                    WritePointsWithOptions<T>(points, ref header);
+                    pointsProcessed += pointsToProcess;
+                }
+
+                WriteHeader(header);
+            }
+        }
+        //------------------------------------------------------------------
+
+        public void Dispose()
+        {
+            if (m_Writer != null)
+            {
+                m_Writer.Close();
+                m_Writer.Dispose();
+                m_Writer = null;
+            }
+        }
+        //------------------------------------------------------------------
+
+    }
+    //------------------------------------------------------------------
+
+}
+//------------------------------------------------------------------

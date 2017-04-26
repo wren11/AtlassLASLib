@@ -1,0 +1,203 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{2281462B-1C15-48B2-AEC0-4F011792CE42}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Atlass.LAS.Lib</RootNamespace>
+    <AssemblyName>Atlass.LAS.Lib</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <CodeAnalysisLogFile>bin\Debug\Atlass.LAS.Lib.dll.CodeAnalysisLog.xml</CodeAnalysisLogFile>
+    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
+    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSetDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
+    <CodeAnalysisIgnoreBuiltInRuleSets>true</CodeAnalysisIgnoreBuiltInRuleSets>
+    <CodeAnalysisRuleDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
+    <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
+    <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <OutputPath>bin\x86\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <CodeAnalysisLogFile>bin\Release\Atlass.LAS.Lib.dll.CodeAnalysisLog.xml</CodeAnalysisLogFile>
+    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
+    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSetDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
+    <CodeAnalysisIgnoreBuiltInRuleSets>true</CodeAnalysisIgnoreBuiltInRuleSets>
+    <CodeAnalysisRuleDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
+    <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <CodeAnalysisLogFile>bin\Debug\Atlass.LAS.Lib.dll.CodeAnalysisLog.xml</CodeAnalysisLogFile>
+    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
+    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSetDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
+    <CodeAnalysisRuleDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
+    <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
+    <CodeAnalysisFailOnMissingRules>false</CodeAnalysisFailOnMissingRules>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <CodeAnalysisLogFile>bin\Release\Atlass.LAS.Lib.dll.CodeAnalysisLog.xml</CodeAnalysisLogFile>
+    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
+    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSetDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\\Rule Sets</CodeAnalysisRuleSetDirectories>
+    <CodeAnalysisIgnoreBuiltInRuleSets>true</CodeAnalysisIgnoreBuiltInRuleSets>
+    <CodeAnalysisRuleDirectories>;C:\Program Files (x86)\Microsoft Visual Studio 10.0\Team Tools\Static Analysis Tools\FxCop\\Rules</CodeAnalysisRuleDirectories>
+    <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Global\TcConstants.cs" />
+    <Compile Include="Operations\Classification\IO\TcClsXYZReader.cs" />
+    <Compile Include="Operations\Classification\IO\TcClsXYZWriter.cs" />
+    <Compile Include="Operations\Classification\IO\TcClsWriter.cs" />
+    <Compile Include="Operations\Classification\IO\TcClsReader.cs" />
+    <Compile Include="Operations\Classification\TcClsConstructor.cs" />
+    <Compile Include="Operations\Classification\TcClsReconstructor.cs" />
+    <Compile Include="Types\Struct\TsXYZLasPoint.cs" />
+    <Compile Include="Types\Struct\TsClsLasPoint.cs" />
+    <Compile Include="Operations\Gridding\TcLasGridder.cs" />
+    <Compile Include="Operations\Gridding\Types\TcGridObject.cs" />
+    <Compile Include="Operations\TcLasSort.cs" />
+    <Compile Include="Operations\TiOperation.cs" />
+    <Compile Include="Operations\IO\TcLasReader.cs" />
+    <Compile Include="Operations\IO\TcLasWriter.cs" />
+    <Compile Include="Operations\Tiling\IO\TcTileLasReader.cs" />
+    <Compile Include="Operations\Tiling\IO\TcTileLasWriter.cs" />
+    <Compile Include="Operations\Gridding\TcLasIndexMaker.cs" />
+    <Compile Include="Operations\Gridding\Types\TcIndexedLasInfo.cs" />
+    <Compile Include="Operations\Tiling\Types\TcTileAreaBlock.cs" />
+    <Compile Include="Operations\Tiling\Types\TcTileBlockInfo.cs" />
+    <Compile Include="Operations\Tiling\Types\TcTileBlockInfoCollection.cs" />
+    <Compile Include="Operations\Tiling\Types\TcTileFileBlock.cs" />
+    <Compile Include="Operations\Tiling\Types\TcTileGrid.cs" />
+    <Compile Include="Operations\Tiling\Types\TcTileInfo.cs" />
+    <Compile Include="Operations\Tiling\TcLasTileMaker.cs" />
+    <Compile Include="Operations\Tiling\TcTileUtils.cs" />
+    <Compile Include="Operations\Tiling\Types\TcLasTilingTaskInfo.cs" />
+    <Compile Include="Support\IO\TcTorReader.cs" />
+    <Compile Include="Support\IO\TcTorWriter.cs" />
+    <Compile Include="Support\Types\TcTorBlock8.cs" />
+    <Compile Include="Support\Types\Interfaces\TiTorBlock.cs" />
+    <Compile Include="Support\Types\TcTolObject.cs" />
+    <Compile Include="Support\Types\TcTorBlock32.cs" />
+    <Compile Include="Support\Types\TcTorObject.cs" />
+    <Compile Include="Types\Class\TcLasFormatSpec.cs" />
+    <Compile Include="Types\DataType\TcAttributes.cs" />
+    <Compile Include="Types\Interface\TiLasGPS.cs" />
+    <Compile Include="Types\Interface\TiLasRGB.cs" />
+    <Compile Include="Types\Interface\TiLasTaskInfo.cs" />
+    <Compile Include="Types\Interface\TiLasWave.cs" />
+    <Compile Include="Types\TcEnums.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Types\Class\TcLasPoint5.cs" />
+    <Compile Include="Types\Class\TcLasPoint4.cs" />
+    <Compile Include="Types\Class\TcLasPoint3.cs" />
+    <Compile Include="Types\Class\TcLasPoint2.cs" />
+    <Compile Include="Types\Class\TcLasPoint1.cs" />
+    <Compile Include="Types\Class\TcLasPoint0.cs" />
+    <Compile Include="Types\Class\TcLasPoint6.cs" />
+    <Compile Include="Types\Class\TcLasPoint7.cs" />
+    <Compile Include="Types\Class\TcLasPoint8.cs" />
+    <Compile Include="Types\Class\TcLasPoint9.cs" />
+    <Compile Include="Types\Class\TcLasPoint10.cs" />
+    <Compile Include="Types\Class\TcLasPointBase.cs" />
+    <Compile Include="Types\DataType\TcPoint.cs" />
+    <Compile Include="Types\DataType\TcPolygon.cs" />
+    <Compile Include="Types\DataType\TcRectangle.cs" />
+    <Compile Include="Types\DataType\ArrayMap.cs" />
+    <Compile Include="Types\DataType\SerializableDirectionary.cs" />
+    <Compile Include="Types\Interface\TiLasHeader.cs" />
+    <Compile Include="Types\Struct\TsLasHeader14.cs" />
+    <Compile Include="Types\Struct\TsLasHeader13.cs" />
+    <Compile Include="Types\Struct\TsLasHeader12.cs" />
+    <Compile Include="Types\Struct\TsLasPoint10.cs" />
+    <Compile Include="Types\Struct\TsLasPoint1.cs" />
+    <Compile Include="Types\Struct\TsLasPoint2.cs" />
+    <Compile Include="Types\Struct\TsLasPoint3.cs" />
+    <Compile Include="Types\Struct\TsLasPoint4.cs" />
+    <Compile Include="Types\Struct\TsLasPoint5.cs" />
+    <Compile Include="Types\Struct\TsLasPoint6.cs" />
+    <Compile Include="Types\Struct\TsLasPoint7.cs" />
+    <Compile Include="Types\Struct\TsLasPoint9.cs" />
+    <Compile Include="Types\Struct\TsLasPoint8.cs" />
+    <Compile Include="Types\Interface\TiLasPoint.cs" />
+    <Compile Include="Types\Struct\TsLasPoint0.cs" />
+    <Compile Include="Types\TcEvents.cs" />
+    <Compile Include="Utilities\TcFileUtils.cs" />
+    <Compile Include="Utilities\TcMathUtil.cs" />
+    <Compile Include="Utilities\TcSort.cs" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
